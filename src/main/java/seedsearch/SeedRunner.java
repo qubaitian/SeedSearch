@@ -20,6 +20,7 @@ import com.megacrit.cardcrawl.helpers.EventHelper;
 import com.megacrit.cardcrawl.helpers.PotionHelper;
 import com.megacrit.cardcrawl.helpers.RelicLibrary;
 import com.megacrit.cardcrawl.map.MapEdge;
+import com.megacrit.cardcrawl.map.MapGenerator;
 import com.megacrit.cardcrawl.map.MapRoomNode;
 import com.megacrit.cardcrawl.neow.NeowEvent;
 import com.megacrit.cardcrawl.neow.NeowReward;
@@ -47,21 +48,24 @@ import java.util.Collections;
 
 import static com.megacrit.cardcrawl.helpers.MonsterHelper.*;
 
-
 public class SeedRunner {
 
     public static ArrayList<AbstractRelic> combatRelics = new ArrayList<>();
     public static ArrayList<Reward> combatCardRewards = new ArrayList<>();
     public static ArrayList<AbstractPotion> combatPotions = new ArrayList<>();
     public static int combatGold = 0;
-
+    public SeedResult seedResult;
+    public ArrayList<Reward> layer_rewards = new ArrayList<>();
+    public ArrayList<String> layer1_all_path;
+    public ArrayList<String> layer2_all_path;
+    public ArrayList<String> layer3_all_path;
+    public int layer1_path_num = 70;
+    public int layer2_path_num = 0;
+    public int layer3_path_num = 0;
     private AbstractPlayer player;
     private int currentAct;
     private int actFloor;
     private int bootsCharges = 0;
-
-    private SeedResult seedResult;
-
     private SearchSettings settings;
     private long currentSeed;
 
@@ -75,6 +79,13 @@ public class SeedRunner {
         AbstractDungeon.ascensionLevel = settings.ascensionLevel;
         Settings.seedSet = true;
         this.settings.checkIds();
+    }
+
+    public static void clearCombatRewards() {
+        combatGold = 0;
+        combatRelics.clear();
+        combatCardRewards.clear();
+        combatPotions.clear();
     }
 
     private void setSeed(long seed) {
@@ -114,18 +125,13 @@ public class SeedRunner {
     }
 
     private boolean runSeed() {
-
-        AbstractDungeon exordium = new Exordium(player, new ArrayList<>());
-        ArrayList<MapRoomNode> exordiumPath = findMapPath(AbstractDungeon.map);
-
         if (!settings.speedrunPace) {
             CardCrawlGame.playtime = 900F;
         } else {
             CardCrawlGame.playtime = 0F;
         }
 
-        if (settings.showRawRelicPools)
-        {
+        if (settings.showRawRelicPools) {
             seedResult.SetCommonRelicPool(AbstractDungeon.commonRelicPool);
             seedResult.SetUncommonRelicPool(AbstractDungeon.uncommonRelicPool);
             seedResult.SetRareRelicPool(AbstractDungeon.rareRelicPool);
@@ -133,6 +139,7 @@ public class SeedRunner {
             seedResult.SetShopRelicPool(AbstractDungeon.shopRelicPool);
         }
 
+        AbstractDungeon exordium = new Exordium(player, new ArrayList<>());
         ArrayList<NeowReward> neowRewards = getNeowRewards();
         seedResult.addNeowRewards(neowRewards);
         if (settings.neowChoice < 0 || settings.neowChoice > 3) {
@@ -146,25 +153,49 @@ public class SeedRunner {
         }
         claimNeowReward(neowReward);
 
+        if (layer1_all_path == null) {
+            layer1_all_path = getAllPath(exordium.map);
+        }
+        if (layer1_path_num == layer1_all_path.size()) {
+            return true;
+        }
+        String current_path = layer1_all_path.get(layer1_path_num);
+        ArrayList<MapRoomNode> exordiumPath = string_path_list_to_node_list(current_path, exordium.map);
         runPath(exordiumPath);
         getBossRewards();
-
         seedResult.updateRelics();
-        if (!seedResult.testAct1Filters(settings)) {
-            return false;
-        }
+
+        System.out.println(current_path);
+        System.out.println("              boss         " + layer_rewards.remove(layer_rewards.size() - 1));
+        print_reward(current_path, exordium.map);
 
         currentAct += 1;
         AbstractDungeon city = new TheCity(player, AbstractDungeon.specialOneTimeEventList);
+        System.out.println("second floor:");
+
         ArrayList<MapRoomNode> cityPath = findMapPath(AbstractDungeon.map);
+        current_path = node_path_to_string_path(cityPath);
         runPath(cityPath);
         getBossRewards();
 
+        System.out.println(current_path);
+        System.out.println("              boss         " + layer_rewards.remove(layer_rewards.size() - 1));
+        print_reward(current_path, city.map);
+
         currentAct += 1;
         AbstractDungeon beyond = new TheBeyond(player, AbstractDungeon.specialOneTimeEventList);
+
+        System.out.println("third floor:");
+
         ArrayList<MapRoomNode> beyondPath = findMapPath(AbstractDungeon.map);
+        current_path = node_path_to_string_path(beyondPath);
+
         runPath(beyondPath);
         getBossRewards();
+
+        System.out.println(current_path);
+        System.out.println("              boss         ");
+        print_reward(current_path, beyond.map);
 
         if (settings.act4) {
             currentAct += 1;
@@ -179,19 +210,12 @@ public class SeedRunner {
         }
 
         seedResult.updateRelics();
-        return seedResult.testFinalFilters(settings);
+        return true;
     }
 
     public boolean runSeed(long seed) {
         setSeed(seed);
         return runSeed();
-    }
-
-    public static void clearCombatRewards() {
-        combatGold = 0;
-        combatRelics.clear();
-        combatCardRewards.clear();
-        combatPotions.clear();
     }
 
     private ArrayList<NeowReward> getNeowRewards() {
@@ -255,7 +279,7 @@ public class SeedRunner {
     }
 
     private void awardRelic(AbstractRelic relic, Reward reward) {
-        String relicKey = relic.relicId;
+        String relicKey = relic.name;
         reward.addRelic(relicKey);
         doRelicPickupLogic(relic, reward);
     }
@@ -431,6 +455,67 @@ public class SeedRunner {
         return path;
     }
 
+    private String node_path_to_string_path(ArrayList<MapRoomNode> nodePath){
+        String current_path = "";
+        for (MapRoomNode path : nodePath) {
+            current_path = current_path + "," + path.x;
+        }
+        current_path = current_path.substring(1);
+        return current_path;
+    }
+
+    private void print_reward(String current_path, ArrayList<ArrayList<MapRoomNode>> map) {
+        String[] current_step_list = current_path.split(",");
+        String map_string = MapGenerator.toString(map, Boolean.valueOf(true));
+        String[] map_string_list = map_string.split("\n");
+        for (int i = 0; i < 15; i++) {
+            System.out.println(map_string_list[2 * i + 1]);
+            String branch = map_string_list[2 * i + 2];
+            int index = 8 + 3 * Integer.parseInt(current_step_list[current_step_list.length - i - 1]);
+            branch = branch.substring(0, index) + "x" + branch.substring(index + 1);
+            System.out.println(branch + layer_rewards.get(layer_rewards.size() - i - 1));
+        }
+        layer_rewards.clear();
+    }
+
+    private ArrayList<MapRoomNode> string_path_list_to_node_list(String string_path, ArrayList<ArrayList<MapRoomNode>> map) {
+        String[] one_path_list = string_path.split(",");
+//        ArrayList<MapRoomNode> exordiumPath = findMapPath(AbstractDungeon.map);
+        ArrayList<MapRoomNode> dungeonPath = new ArrayList<MapRoomNode>(15);
+        for (int i = 0; i < one_path_list.length; i++) {
+            dungeonPath.add(map.get(i).get(Integer.parseInt(one_path_list[i])));
+        }
+        return dungeonPath;
+    }
+
+    private ArrayList<String> getAllPath(ArrayList<ArrayList<MapRoomNode>> map) {
+        ArrayList<String> oldPaths = new ArrayList<>();
+        ArrayList<String> newPaths = new ArrayList<>();
+
+        for (int j = 0; j < 7; j++) {
+            MapRoomNode node = map.get(0).get(j);
+            if (node.getEdges().isEmpty()) {
+                continue;
+            }
+            oldPaths.add("" + j);
+        }
+        for (int i = 0; i < 14; i++) {
+            newPaths = new ArrayList<>();
+            for (int j = 0; j < oldPaths.size(); j++) {
+                String oldPath = oldPaths.get(j);
+                String[] path_node_list = oldPath.split(",");
+                String last_node_x = path_node_list[path_node_list.length - 1];
+                MapRoomNode last_node = map.get(i).get(Integer.valueOf(last_node_x));
+                ArrayList<MapEdge> edges = last_node.getEdges();
+                for (MapEdge edge : edges) {
+                    newPaths.add(oldPath + "," + edge.dstX);
+                }
+            }
+            oldPaths = newPaths;
+        }
+        return newPaths;
+    }
+
     private ArrayList<MapRoomNode> findMapPath(ArrayList<ArrayList<MapRoomNode>> map) {
         if (bootsCharges > 0) {
             return findBootsPath(map);
@@ -507,10 +592,6 @@ public class SeedRunner {
         }
     }
 
-    public enum RoomType {
-        EVENT, ELITE, MONSTER, SHOP, TREASURE, REST
-    }
-
     private void runPath(ArrayList<MapRoomNode> path) {
         for (actFloor = 0; actFloor < path.size(); actFloor++) {
             AbstractDungeon.floorNum += 1;
@@ -571,17 +652,21 @@ public class SeedRunner {
                     Random eventRngDuplicate = new Random(Settings.seed, AbstractDungeon.eventRng.counter);
                     AbstractEvent event = AbstractDungeon.generateEvent(eventRngDuplicate);
                     String eventKey = EventHelperPatch.eventName;
+                    String event_name = CardCrawlGame.languagePack.getEventString(eventKey).NAME;
                     Reward eventReward = getEventReward(event, eventKey, AbstractDungeon.floorNum);
                     seedResult.registerEvent(eventKey);
                     if (!eventReward.isEmpty()) {
                         seedResult.addMiscReward(eventReward);
                     }
+                    layer_rewards.add(new Reward(AbstractDungeon.floorNum, event_name));
                     break;
                 case MONSTER:
                     seedResult.addToTrueMapPath("M");
                     String monster = AbstractDungeon.monsterList.remove(0);
                     seedResult.registerCombat(monster);
-                    seedResult.addCardReward(AbstractDungeon.floorNum, AbstractDungeon.getRewardCards());
+//                    seedResult.addCardReward(AbstractDungeon.floorNum, AbstractDungeon.getRewardCards());
+                    Reward r = Reward.makeCardReward(AbstractDungeon.floorNum, AbstractDungeon.getRewardCards());
+                    seedResult.cardRewards.add(r);
                     if (player.hasRelic(PrayerWheel.ID)) {
                         seedResult.addCardReward(AbstractDungeon.floorNum, AbstractDungeon.getRewardCards());
                     }
@@ -592,13 +677,16 @@ public class SeedRunner {
                         Reward monsterPotionReward = new Reward(AbstractDungeon.floorNum);
                         monsterPotionReward.addPotion(monsterPotion);
                         seedResult.addMiscReward(monsterPotionReward);
+                        r.potions.add(monsterPotion);
                     }
+                    layer_rewards.add(r);
                     break;
                 case ELITE:
                     seedResult.addToTrueMapPath("E");
                     String elite = AbstractDungeon.eliteMonsterList.remove(0);
                     seedResult.registerEliteCombat(elite);
-                    seedResult.addCardReward(AbstractDungeon.floorNum, AbstractDungeon.getRewardCards());
+                    Reward r_elite = Reward.makeCardReward(AbstractDungeon.floorNum, AbstractDungeon.getRewardCards());
+                    seedResult.cardRewards.add(r_elite);
                     AbstractRelic.RelicTier tier = AbstractDungeon.returnRandomRelicTier();
                     String relic = AbstractDungeon.returnRandomRelicKey(tier);
                     Reward relicReward = new Reward(AbstractDungeon.floorNum);
@@ -616,12 +704,16 @@ public class SeedRunner {
                         monsterPotionReward.addPotion(elitePotion);
                         seedResult.addMiscReward(monsterPotionReward);
                     }
+                    AbstractRelic realRelic = RelicLibrary.getRelic(relic);
+                    r_elite.addRelic(realRelic.name);
+                    layer_rewards.add(r_elite);
                     break;
                 case SHOP:
                     seedResult.addToTrueMapPath("S");
                     Merchant merchant = new Merchant();
                     Reward shopReward = getShopReward(AbstractDungeon.floorNum);
                     seedResult.addShopReward(shopReward);
+                    layer_rewards.add(shopReward);
                     break;
                 case TREASURE:
                     seedResult.addToTrueMapPath("T");
@@ -638,6 +730,7 @@ public class SeedRunner {
                     }
                     seedResult.addAllCardRewards(combatCardRewards);
                     seedResult.addMiscReward(treasureRelicReward);
+                    layer_rewards.add(treasureRelicReward);
                     break;
                 case REST:
                     seedResult.addToTrueMapPath("R");
@@ -647,13 +740,13 @@ public class SeedRunner {
                         AbstractRelic.RelicTier digTier = AbstractDungeon.returnRandomRelicTier();
                         awardRelic(AbstractDungeon.returnRandomRelic(digTier), digReward);
                     }
+                    layer_rewards.add(new Reward(AbstractDungeon.floorNum, "rest"));
                     break;
             }
         }
         seedResult.addToMapPath("BOSS");
         seedResult.addToTrueMapPath("BOSS");
     }
-
 
     @SuppressWarnings("unchecked")
     private Reward getShopReward(int floor) {
@@ -683,7 +776,7 @@ public class SeedRunner {
                     awardRelic(relic.relic, shopReward);
                     addGoldReward(-relic.price);
                 } else {
-                    shopReward.addRelic(relic.relic.relicId);
+                    shopReward.addRelic(relic.relic.name);
                 }
             }
             for (AbstractCard card : shopReward.cards) {
@@ -696,7 +789,7 @@ public class SeedRunner {
                 }
             }
             for (StorePotion potion : potions) {
-                if (settings.potionsToBuy.contains(potion.potion.ID) && potion.price <= player.gold){
+                if (settings.potionsToBuy.contains(potion.potion.ID) && potion.price <= player.gold) {
                     Reward shopPotionReward = new Reward(AbstractDungeon.floorNum);
                     shopPotionReward.addPotion(potion.potion);
                     seedResult.addMiscReward(shopPotionReward);
@@ -1049,8 +1142,8 @@ public class SeedRunner {
         if (currentAct < 2) {
             AbstractDungeon.miscRng = new Random(currentSeed + (long) AbstractDungeon.floorNum);
 
-            Reward cardReward = new Reward(AbstractDungeon.floorNum);
-            cardReward.addCards(AbstractDungeon.getRewardCards());
+            Reward bossReward = new Reward(AbstractDungeon.floorNum);
+            bossReward.addCards(AbstractDungeon.getRewardCards());
             int gold = 100 + AbstractDungeon.miscRng.random(-5, 5);
             if (AbstractDungeon.ascensionLevel >= 13) {
                 gold = (int) (gold * 0.75);
@@ -1059,6 +1152,7 @@ public class SeedRunner {
             AbstractPotion potion = getPotionReward();
             if (potion != null) {
                 Reward potionReward = new Reward(AbstractDungeon.floorNum);
+                bossReward.addPotion(potion);
                 potionReward.addPotion(potion);
                 seedResult.addMiscReward(potionReward);
             }
@@ -1073,6 +1167,7 @@ public class SeedRunner {
             BossChest bossChest = new BossChest();
             ArrayList<String> bossRelicStrings = new ArrayList<>();
             for (AbstractRelic relic : bossChest.relics) {
+                bossReward.addRelic(relic.name);
                 bossRelicStrings.add(relic.relicId);
             }
             seedResult.addBossReward(bossRelicStrings);
@@ -1083,8 +1178,9 @@ public class SeedRunner {
                     break;
                 }
             }
-
-            seedResult.addCardReward(cardReward);
+            bossReward.addRelics(bossRelicReward.relics);
+            layer_rewards.add(bossReward);
+            seedResult.addCardReward(bossReward);
             seedResult.addMiscReward(bossRelicReward);
         }
     }
@@ -1125,6 +1221,10 @@ public class SeedRunner {
 
     private void loseRelic(String relicID) {
         player.loseRelic(relicID);
+    }
+
+    public enum RoomType {
+        EVENT, ELITE, MONSTER, SHOP, TREASURE, REST
     }
 
 }

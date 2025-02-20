@@ -26,7 +26,7 @@ public class SeedSearch {
         if (settings.playerClass == null) {
             System.out.println("Invalid playerClass specified in search settings.");
             System.out.println("Possible values: ");
-            for (AbstractPlayer.PlayerClass c: AbstractPlayer.PlayerClass.values()) {
+            for (AbstractPlayer.PlayerClass c : AbstractPlayer.PlayerClass.values()) {
                 System.out.println(c.name());
             }
             return false;
@@ -64,14 +64,14 @@ public class SeedSearch {
         UnlockTracker.refresh();
         SeedRunner runner = new SeedRunner(settings);
         ArrayList<Long> foundSeeds = new ArrayList<>();
-        for (long seed = settings.startSeed; seed < settings.endSeed; seed++) {
-            if (runner.runSeed(seed)) {
-                foundSeeds.add(seed);
-                if (settings.verbose) {
-                    runner.getSeedResult().printSeedStats(settings);
-                }
+        long seed = settings.startSeed;
+        if (runner.runSeed(seed)) {
+            foundSeeds.add(seed);
+            if (settings.verbose) {
+                runner.getSeedResult().printSeedStats(settings);
             }
         }
+
         System.out.println(String.format("%d seeds found: ", foundSeeds.size()));
         System.out.println(foundSeeds);
 

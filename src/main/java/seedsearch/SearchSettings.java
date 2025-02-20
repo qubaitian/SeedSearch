@@ -6,6 +6,7 @@ import com.megacrit.cardcrawl.cards.red.BodySlam;
 import com.megacrit.cardcrawl.characters.AbstractPlayer;
 import com.megacrit.cardcrawl.relics.Calipers;
 import com.megacrit.cardcrawl.relics.JuzuBracelet;
+import com.megacrit.cardcrawl.helpers.SeedHelper;
 
 import java.io.File;
 import java.io.FileReader;
@@ -21,6 +22,7 @@ public class SearchSettings {
 
     public int ascensionLevel = 0;
     public AbstractPlayer.PlayerClass playerClass = AbstractPlayer.PlayerClass.IRONCLAD;
+    public String seed = "";
     public long startSeed = 0L;
     public long endSeed = 100L;
     public boolean verbose = true;
@@ -139,6 +141,8 @@ public class SearchSettings {
             if (file.exists()) {
                 Gson gson = new Gson();
                 SearchSettings settings = gson.fromJson(new FileReader(file), SearchSettings.class);
+                settings.startSeed = SeedHelper.getLong(settings.seed);
+                System.out.println("settings :" + file.getAbsolutePath());
                 return settings;
             } else {
                 SearchSettings settings = new SearchSettings();

@@ -13,26 +13,26 @@ import java.util.Collections;
 
 public class SeedResult {
 
-    private ArrayList<Reward> miscRewards;
-    private ArrayList<Reward> shopRewards;
-    private ArrayList<Reward> cardRewards;
-    private ArrayList<NeowReward> neowRewards;
-    private ArrayList<String> events;
-    private ArrayList<String> bosses;
-    private ArrayList<String> monsters;
-    private ArrayList<String> mapPath;
-    private ArrayList<String> trueMapPath;
-    private ArrayList<String> bossRelics;
-    private ArrayList<String> relics;
-    private ArrayList<String> rawCommonRelics;
-    private ArrayList<String> rawUncommonRelics;
-    private ArrayList<String> rawRareRelics;
-    private ArrayList<String> rawBossRelics;
-    private ArrayList<String> rawShopRelics;
-    private int numElites;
-    private int numCombats;
-    private int numRestSites;
-    private long seed;
+    public ArrayList<Reward> miscRewards;
+    public ArrayList<Reward> shopRewards;
+    public ArrayList<Reward> cardRewards;
+    public ArrayList<NeowReward> neowRewards;
+    public ArrayList<String> events;
+    public ArrayList<String> bosses;
+    public ArrayList<String> monsters;
+    public ArrayList<String> mapPath;
+    public ArrayList<String> trueMapPath;
+    public ArrayList<String> bossRelics;
+    public ArrayList<String> relics;
+    public ArrayList<String> rawCommonRelics;
+    public ArrayList<String> rawUncommonRelics;
+    public ArrayList<String> rawRareRelics;
+    public ArrayList<String> rawBossRelics;
+    public ArrayList<String> rawShopRelics;
+    public int numElites;
+    public int numCombats;
+    public int numRestSites;
+    public long seed;
 
     public SeedResult(long seed) {
         this.seed = seed;
