@@ -4,7 +4,6 @@ import com.megacrit.cardcrawl.cards.AbstractCard;
 import com.megacrit.cardcrawl.potions.AbstractPotion;
 
 import java.util.ArrayList;
-import java.util.stream.Collectors;
 
 public class Reward {
 
@@ -74,6 +73,10 @@ public class Reward {
     @Override
     public String toString() {
         ArrayList<String> potionNames = new ArrayList<>();
+        String monster_string = "";
+        if (monsterName != null) {
+            monster_string = " " + monsterName + " |";
+        }
         if (!potions.isEmpty()) {
             for (AbstractPotion potion : potions) {
                 potionNames.add(potion.name);
@@ -95,6 +98,6 @@ public class Reward {
         if (eventName != null) {
             event_string = " event: " + eventName;
         }
-        return card_string + relic_string + potion_string + event_string;
+        return monster_string + card_string + relic_string + potion_string + event_string;
     }
 }

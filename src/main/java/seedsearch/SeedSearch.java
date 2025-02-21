@@ -71,7 +71,6 @@ public class SeedSearch {
                 runner.getSeedResult().printSeedStats(settings);
             }
         }
-
         System.out.println(String.format("%d seeds found: ", foundSeeds.size()));
         System.out.println(foundSeeds);
 

@@ -44,9 +44,14 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 
 import static com.megacrit.cardcrawl.helpers.MonsterHelper.*;
+import com.megacrit.cardcrawl.localization.LocalizedStrings;
+import com.megacrit.cardcrawl.localization.MonsterStrings;
+import com.megacrit.cardcrawl.helpers.MonsterHelper;
+import java.util.Map;
 
 public class SeedRunner {
 
@@ -59,7 +64,7 @@ public class SeedRunner {
     public ArrayList<String> layer1_all_path;
     public ArrayList<String> layer2_all_path;
     public ArrayList<String> layer3_all_path;
-    public int layer1_path_num = 70;
+    public int layer1_path_num = 0;
     public int layer2_path_num = 0;
     public int layer3_path_num = 0;
     private AbstractPlayer player;
@@ -152,15 +157,17 @@ public class SeedRunner {
             neowReward = neowRewards.get(settings.neowChoice);
         }
         claimNeowReward(neowReward);
-
-        if (layer1_all_path == null) {
+        if (settings.layer1_path == null) {
             layer1_all_path = getAllPath(exordium.map);
+        }else {
+            layer1_all_path = new ArrayList<>(Arrays.asList(settings.layer1_path.split(" ")));
         }
         if (layer1_path_num == layer1_all_path.size()) {
             return true;
         }
         String current_path = layer1_all_path.get(layer1_path_num);
         ArrayList<MapRoomNode> exordiumPath = string_path_list_to_node_list(current_path, exordium.map);
+        System.out.println(AbstractDungeon.monsterList);
         runPath(exordiumPath);
         getBossRewards();
         seedResult.updateRelics();
@@ -197,17 +204,16 @@ public class SeedRunner {
         System.out.println("              boss         ");
         print_reward(current_path, beyond.map);
 
-        if (settings.act4) {
-            currentAct += 1;
-            AbstractDungeon end = new TheEnding(player, AbstractDungeon.specialOneTimeEventList);
-            AbstractDungeon.floorNum += 1;
-            ArrayList<MapRoomNode> endPath = new ArrayList<>();
-            endPath.add(AbstractDungeon.map.get(0).get(3));
-            endPath.add(AbstractDungeon.map.get(1).get(3));
-            endPath.add(AbstractDungeon.map.get(2).get(3));
-            runPath(endPath);
-            getBossRewards();
-        }
+
+        currentAct += 1;
+        AbstractDungeon end = new TheEnding(player, AbstractDungeon.specialOneTimeEventList);
+        AbstractDungeon.floorNum += 1;
+        ArrayList<MapRoomNode> endPath = new ArrayList<>();
+        endPath.add(AbstractDungeon.map.get(0).get(3));
+        endPath.add(AbstractDungeon.map.get(1).get(3));
+        endPath.add(AbstractDungeon.map.get(2).get(3));
+        runPath(endPath);
+        getBossRewards();
 
         seedResult.updateRelics();
         return true;
@@ -215,6 +221,31 @@ public class SeedRunner {
 
     public boolean runSeed(long seed) {
         setSeed(seed);
+        AbstractDungeon exordium = new Exordium(player, new ArrayList<>());
+        AbstractDungeon city = new TheCity(player, AbstractDungeon.specialOneTimeEventList);
+        AbstractDungeon beyond = new TheBeyond(player, AbstractDungeon.specialOneTimeEventList);
+        if (settings.layer1_path == null) {
+            String map_string = MapGenerator.toString(exordium.map, Boolean.valueOf(true));
+            layer1_all_path = getAllPath(exordium.map);
+        }else {
+            layer1_all_path = new ArrayList<>(Arrays.asList(settings.layer1_path.split(" ")));
+        }
+        if (settings.layer2_path == null) {
+            String map_string = MapGenerator.toString(city.map, Boolean.valueOf(true));
+            layer2_all_path = getAllPath(city.map);
+        }else {
+            layer2_all_path = new ArrayList<>(Arrays.asList(settings.layer2_path.split(" ")));
+        }
+        if (settings.layer3_path == null) {
+            String map_string = MapGenerator.toString(beyond.map, Boolean.valueOf(true));
+            layer3_all_path = getAllPath(beyond.map);
+        }else {
+            layer3_all_path = new ArrayList<>(Arrays.asList(settings.layer3_path.split(" ")));
+        }
+        setSeed(seed);
+        System.out.println("path1: " + layer1_all_path);
+        System.out.println("path2: " + layer2_all_path);
+        System.out.println("path3: " + layer3_all_path);
         return runSeed();
     }
 
@@ -666,6 +697,7 @@ public class SeedRunner {
                     seedResult.registerCombat(monster);
 //                    seedResult.addCardReward(AbstractDungeon.floorNum, AbstractDungeon.getRewardCards());
                     Reward r = Reward.makeCardReward(AbstractDungeon.floorNum, AbstractDungeon.getRewardCards());
+                    r.monsterName = getEncounterName(monster);
                     seedResult.cardRewards.add(r);
                     if (player.hasRelic(PrayerWheel.ID)) {
                         seedResult.addCardReward(AbstractDungeon.floorNum, AbstractDungeon.getRewardCards());
@@ -683,9 +715,11 @@ public class SeedRunner {
                     break;
                 case ELITE:
                     seedResult.addToTrueMapPath("E");
+                    System.out.println(AbstractDungeon.eliteMonsterList);
                     String elite = AbstractDungeon.eliteMonsterList.remove(0);
                     seedResult.registerEliteCombat(elite);
                     Reward r_elite = Reward.makeCardReward(AbstractDungeon.floorNum, AbstractDungeon.getRewardCards());
+                    r_elite.monsterName = elite;
                     seedResult.cardRewards.add(r_elite);
                     AbstractRelic.RelicTier tier = AbstractDungeon.returnRandomRelicTier();
                     String relic = AbstractDungeon.returnRandomRelicKey(tier);

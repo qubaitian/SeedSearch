@@ -23,6 +23,9 @@ public class SearchSettings {
     public int ascensionLevel = 0;
     public AbstractPlayer.PlayerClass playerClass = AbstractPlayer.PlayerClass.IRONCLAD;
     public String seed = "";
+    public String layer1_path;
+    public String layer2_path;
+    public String layer3_path;
     public long startSeed = 0L;
     public long endSeed = 100L;
     public boolean verbose = true;
