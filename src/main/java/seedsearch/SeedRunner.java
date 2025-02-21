@@ -161,13 +161,31 @@ public class SeedRunner {
                         neowReward = neowRewards.get(settings.neowChoice);
                     }
                     claimNeowReward(neowReward);
-                    if (settings.layer1_path == null) {
+                    if (layer1_all_path.isEmpty()) {
                         layer1_all_path = getAllPath(exordium.map);
-                    } else {
-                        layer1_all_path = new ArrayList<>(Arrays.asList(settings.layer1_path.split("")));
-                    }
-                    if (layer1_path_num == layer1_all_path.size()) {
-                        return true;
+                        if (settings.layer1_path != null) {
+                            ArrayList<String> player_set_all_path = new ArrayList<>(Arrays.asList(settings.layer1_path.split(" ")));
+                            ArrayList<String> without_star_all_path = new ArrayList<>();
+
+                            for (String s : player_set_all_path) {
+                                label:
+                                for (String s2 : layer1_all_path) {
+                                    for (int i = 0; i < s.length(); i++) {
+                                        if (s2.charAt(i) == '*') {
+                                            continue;
+                                        }
+                                        if (s.charAt(i) == s2.charAt(i)) {
+                                            continue;
+                                        }
+                                        if (s.charAt(i) != s2.charAt(i)) {
+                                            continue label;
+                                        }
+                                    }
+                                    without_star_all_path.add(s);
+                                }
+                            }
+                            layer1_all_path = without_star_all_path;
+                        }
                     }
                     String layer1_path = layer1_all_path.get(layer1_path_num);
                     ArrayList<MapRoomNode> exordiumPath = string_path_list_to_node_list(layer1_path, exordium.map);
