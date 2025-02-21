@@ -40,6 +40,8 @@ import seedsearch.patches.CardRewardScreenPatch;
 import seedsearch.patches.EventHelperPatch;
 import seedsearch.patches.ShowCardAndObtainEffectPatch;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -48,10 +50,6 @@ import java.util.Arrays;
 import java.util.Collections;
 
 import static com.megacrit.cardcrawl.helpers.MonsterHelper.*;
-import com.megacrit.cardcrawl.localization.LocalizedStrings;
-import com.megacrit.cardcrawl.localization.MonsterStrings;
-import com.megacrit.cardcrawl.helpers.MonsterHelper;
-import java.util.Map;
 
 public class SeedRunner {
 
@@ -129,7 +127,8 @@ public class SeedRunner {
         CardCrawlGame.music.update();
     }
 
-    private boolean runSeed() {
+    public boolean runSeed(long seed) {
+        setSeed(seed);
         if (!settings.speedrunPace) {
             CardCrawlGame.playtime = 900F;
         } else {
@@ -159,50 +158,52 @@ public class SeedRunner {
         claimNeowReward(neowReward);
         if (settings.layer1_path == null) {
             layer1_all_path = getAllPath(exordium.map);
-        }else {
+        } else {
             layer1_all_path = new ArrayList<>(Arrays.asList(settings.layer1_path.split(" ")));
         }
         if (layer1_path_num == layer1_all_path.size()) {
             return true;
         }
-        String current_path = layer1_all_path.get(layer1_path_num);
-        ArrayList<MapRoomNode> exordiumPath = string_path_list_to_node_list(current_path, exordium.map);
+        String layer1_path = layer1_all_path.get(layer1_path_num);
+        ArrayList<MapRoomNode> exordiumPath = string_path_list_to_node_list(layer1_path, exordium.map);
         System.out.println(AbstractDungeon.monsterList);
         runPath(exordiumPath);
         getBossRewards();
         seedResult.updateRelics();
 
-        System.out.println(current_path);
-        System.out.println("              boss         " + layer_rewards.remove(layer_rewards.size() - 1));
-        print_reward(current_path, exordium.map);
+        ArrayList<String> content = new ArrayList<>();
+        content.add("first floor:");
+        content.add(layer1_path);
+        content.add("              boss         " + layer_rewards.remove(layer_rewards.size() - 1));
+        content.addAll(print_reward(layer1_path, exordium.map));
 
         currentAct += 1;
         AbstractDungeon city = new TheCity(player, AbstractDungeon.specialOneTimeEventList);
-        System.out.println("second floor:");
+        content.add("second floor:");
 
         ArrayList<MapRoomNode> cityPath = findMapPath(AbstractDungeon.map);
-        current_path = node_path_to_string_path(cityPath);
+        String layer2_path = node_path_to_string_path(cityPath);
         runPath(cityPath);
         getBossRewards();
 
-        System.out.println(current_path);
-        System.out.println("              boss         " + layer_rewards.remove(layer_rewards.size() - 1));
-        print_reward(current_path, city.map);
+        content.add(layer2_path);
+        content.add("              boss         " + layer_rewards.remove(layer_rewards.size() - 1));
+        content.addAll(print_reward(layer2_path, city.map));
 
         currentAct += 1;
         AbstractDungeon beyond = new TheBeyond(player, AbstractDungeon.specialOneTimeEventList);
 
-        System.out.println("third floor:");
+        content.add("third floor:");
 
         ArrayList<MapRoomNode> beyondPath = findMapPath(AbstractDungeon.map);
-        current_path = node_path_to_string_path(beyondPath);
+        String layer3_path = node_path_to_string_path(beyondPath);
 
         runPath(beyondPath);
         getBossRewards();
 
-        System.out.println(current_path);
-        System.out.println("              boss         ");
-        print_reward(current_path, beyond.map);
+        content.add(layer3_path);
+        content.add("              boss         ");
+        content.addAll(print_reward(layer3_path, beyond.map));
 
 
         currentAct += 1;
@@ -216,37 +217,21 @@ public class SeedRunner {
         getBossRewards();
 
         seedResult.updateRelics();
-        return true;
-    }
 
-    public boolean runSeed(long seed) {
-        setSeed(seed);
-        AbstractDungeon exordium = new Exordium(player, new ArrayList<>());
-        AbstractDungeon city = new TheCity(player, AbstractDungeon.specialOneTimeEventList);
-        AbstractDungeon beyond = new TheBeyond(player, AbstractDungeon.specialOneTimeEventList);
-        if (settings.layer1_path == null) {
-            String map_string = MapGenerator.toString(exordium.map, Boolean.valueOf(true));
-            layer1_all_path = getAllPath(exordium.map);
-        }else {
-            layer1_all_path = new ArrayList<>(Arrays.asList(settings.layer1_path.split(" ")));
+
+        try {
+            FileWriter writer = new FileWriter(settings.seed + "-" + settings.ascensionLevel + "-" + settings.playerClass + "-" + layer1_path.replaceAll(",", "") + "-" + layer2_path.replaceAll(",", "") + "-" + layer3_path.replaceAll(",", "") + ".txt");
+            for (String line : content) {
+                System.out.println(line);
+                writer.write(line + "\n");
+            }
+            writer.close();
+            System.out.println("Successfully wrote text to file.");
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
-        if (settings.layer2_path == null) {
-            String map_string = MapGenerator.toString(city.map, Boolean.valueOf(true));
-            layer2_all_path = getAllPath(city.map);
-        }else {
-            layer2_all_path = new ArrayList<>(Arrays.asList(settings.layer2_path.split(" ")));
-        }
-        if (settings.layer3_path == null) {
-            String map_string = MapGenerator.toString(beyond.map, Boolean.valueOf(true));
-            layer3_all_path = getAllPath(beyond.map);
-        }else {
-            layer3_all_path = new ArrayList<>(Arrays.asList(settings.layer3_path.split(" ")));
-        }
-        setSeed(seed);
-        System.out.println("path1: " + layer1_all_path);
-        System.out.println("path2: " + layer2_all_path);
-        System.out.println("path3: " + layer3_all_path);
-        return runSeed();
+        return true;
     }
 
     private ArrayList<NeowReward> getNeowRewards() {
@@ -486,7 +471,7 @@ public class SeedRunner {
         return path;
     }
 
-    private String node_path_to_string_path(ArrayList<MapRoomNode> nodePath){
+    private String node_path_to_string_path(ArrayList<MapRoomNode> nodePath) {
         String current_path = "";
         for (MapRoomNode path : nodePath) {
             current_path = current_path + "," + path.x;
@@ -495,18 +480,20 @@ public class SeedRunner {
         return current_path;
     }
 
-    private void print_reward(String current_path, ArrayList<ArrayList<MapRoomNode>> map) {
+    private ArrayList<String> print_reward(String current_path, ArrayList<ArrayList<MapRoomNode>> map) {
+        ArrayList<String> content = new ArrayList<>();
         String[] current_step_list = current_path.split(",");
         String map_string = MapGenerator.toString(map, Boolean.valueOf(true));
         String[] map_string_list = map_string.split("\n");
         for (int i = 0; i < 15; i++) {
-            System.out.println(map_string_list[2 * i + 1]);
+            content.add(map_string_list[2 * i + 1]);
             String branch = map_string_list[2 * i + 2];
             int index = 8 + 3 * Integer.parseInt(current_step_list[current_step_list.length - i - 1]);
             branch = branch.substring(0, index) + "x" + branch.substring(index + 1);
-            System.out.println(branch + layer_rewards.get(layer_rewards.size() - i - 1));
+            content.add(branch + layer_rewards.get(layer_rewards.size() - i - 1));
         }
         layer_rewards.clear();
+        return content;
     }
 
     private ArrayList<MapRoomNode> string_path_list_to_node_list(String string_path, ArrayList<ArrayList<MapRoomNode>> map) {
