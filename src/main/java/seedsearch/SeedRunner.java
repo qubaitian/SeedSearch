@@ -59,9 +59,9 @@ public class SeedRunner {
     public static int combatGold = 0;
     public SeedResult seedResult;
     public ArrayList<Reward> layer_rewards = new ArrayList<>();
-    public ArrayList<String> layer1_all_path;
-    public ArrayList<String> layer2_all_path;
-    public ArrayList<String> layer3_all_path;
+    public ArrayList<String> layer1_all_path = new ArrayList<>();
+    public ArrayList<String> layer2_all_path = new ArrayList<>();
+    public ArrayList<String> layer3_all_path = new ArrayList<>();
     public int layer1_path_num = 0;
     public int layer2_path_num = 0;
     public int layer3_path_num = 0;
@@ -128,109 +128,120 @@ public class SeedRunner {
     }
 
     public boolean runSeed(long seed) {
-        setSeed(seed);
-        if (!settings.speedrunPace) {
-            CardCrawlGame.playtime = 900F;
-        } else {
-            CardCrawlGame.playtime = 0F;
-        }
+        do {
+            layer2_path_num = 0;
+            do {
+                layer1_path_num = 0;
+                do {
+                    setSeed(seed);
+                    if (!settings.speedrunPace) {
+                        CardCrawlGame.playtime = 900F;
+                    } else {
+                        CardCrawlGame.playtime = 0F;
+                    }
 
-        if (settings.showRawRelicPools) {
-            seedResult.SetCommonRelicPool(AbstractDungeon.commonRelicPool);
-            seedResult.SetUncommonRelicPool(AbstractDungeon.uncommonRelicPool);
-            seedResult.SetRareRelicPool(AbstractDungeon.rareRelicPool);
-            seedResult.SetBossRelicPool(AbstractDungeon.bossRelicPool);
-            seedResult.SetShopRelicPool(AbstractDungeon.shopRelicPool);
-        }
+                    if (settings.showRawRelicPools) {
+                        seedResult.SetCommonRelicPool(AbstractDungeon.commonRelicPool);
+                        seedResult.SetUncommonRelicPool(AbstractDungeon.uncommonRelicPool);
+                        seedResult.SetRareRelicPool(AbstractDungeon.rareRelicPool);
+                        seedResult.SetBossRelicPool(AbstractDungeon.bossRelicPool);
+                        seedResult.SetShopRelicPool(AbstractDungeon.shopRelicPool);
+                    }
 
-        AbstractDungeon exordium = new Exordium(player, new ArrayList<>());
-        ArrayList<NeowReward> neowRewards = getNeowRewards();
-        seedResult.addNeowRewards(neowRewards);
-        if (settings.neowChoice < 0 || settings.neowChoice > 3) {
-            throw new RuntimeException("The 'neowChoice' setting must be between 0 and 3.");
-        }
-        NeowReward neowReward;
-        if (settings.forceNeowLament) {
-            neowReward = new NeowReward(true);
-        } else {
-            neowReward = neowRewards.get(settings.neowChoice);
-        }
-        claimNeowReward(neowReward);
-        if (settings.layer1_path == null) {
-            layer1_all_path = getAllPath(exordium.map);
-        } else {
-            layer1_all_path = new ArrayList<>(Arrays.asList(settings.layer1_path.split("")));
-        }
-        if (layer1_path_num == layer1_all_path.size()) {
-            return true;
-        }
-        String layer1_path = layer1_all_path.get(layer1_path_num);
-        ArrayList<MapRoomNode> exordiumPath = string_path_list_to_node_list(layer1_path, exordium.map);
-        System.out.println(AbstractDungeon.monsterList);
-        runPath(exordiumPath);
-        getBossRewards();
-        seedResult.updateRelics();
+                    AbstractDungeon exordium = new Exordium(player, new ArrayList<>());
+                    ArrayList<NeowReward> neowRewards = getNeowRewards();
+                    seedResult.addNeowRewards(neowRewards);
+                    if (settings.neowChoice < 0 || settings.neowChoice > 3) {
+                        throw new RuntimeException("The 'neowChoice' setting must be between 0 and 3.");
+                    }
+                    NeowReward neowReward;
+                    if (settings.forceNeowLament) {
+                        neowReward = new NeowReward(true);
+                    } else {
+                        neowReward = neowRewards.get(settings.neowChoice);
+                    }
+                    claimNeowReward(neowReward);
+                    if (settings.layer1_path == null) {
+                        layer1_all_path = getAllPath(exordium.map);
+                    } else {
+                        layer1_all_path = new ArrayList<>(Arrays.asList(settings.layer1_path.split("")));
+                    }
+                    if (layer1_path_num == layer1_all_path.size()) {
+                        return true;
+                    }
+                    String layer1_path = layer1_all_path.get(layer1_path_num);
+                    ArrayList<MapRoomNode> exordiumPath = string_path_list_to_node_list(layer1_path, exordium.map);
+                    System.out.println(AbstractDungeon.monsterList);
+                    runPath(exordiumPath);
+                    getBossRewards();
+                    seedResult.updateRelics();
 
-        ArrayList<String> content = new ArrayList<>();
-        content.add("first floor:");
-        content.add(layer1_path);
-        content.add("              boss         " + layer_rewards.remove(layer_rewards.size() - 1));
-        content.addAll(print_reward(layer1_path, exordium.map));
+                    ArrayList<String> content = new ArrayList<>();
+                    content.add("first floor:");
+                    content.add(layer1_path);
+                    content.add("              boss         " + layer_rewards.remove(layer_rewards.size() - 1));
+                    content.addAll(print_reward(layer1_path, exordium.map));
 
-        currentAct += 1;
-        AbstractDungeon city = new TheCity(player, AbstractDungeon.specialOneTimeEventList);
-        content.add("second floor:");
+                    currentAct += 1;
+                    AbstractDungeon city = new TheCity(player, AbstractDungeon.specialOneTimeEventList);
+                    content.add("second floor:");
 
-        ArrayList<MapRoomNode> cityPath = findMapPath(AbstractDungeon.map);
-        String layer2_path = node_path_to_string_path(cityPath);
-        runPath(cityPath);
-        getBossRewards();
+                    ArrayList<MapRoomNode> cityPath = findMapPath(AbstractDungeon.map);
+                    String layer2_path = node_path_to_string_path(cityPath);
+                    runPath(cityPath);
+                    getBossRewards();
 
-        content.add(layer2_path);
-        content.add("              boss         " + layer_rewards.remove(layer_rewards.size() - 1));
-        content.addAll(print_reward(layer2_path, city.map));
+                    content.add(layer2_path);
+                    content.add("              boss         " + layer_rewards.remove(layer_rewards.size() - 1));
+                    content.addAll(print_reward(layer2_path, city.map));
 
-        currentAct += 1;
-        AbstractDungeon beyond = new TheBeyond(player, AbstractDungeon.specialOneTimeEventList);
+                    currentAct += 1;
+                    AbstractDungeon beyond = new TheBeyond(player, AbstractDungeon.specialOneTimeEventList);
 
-        content.add("third floor:");
+                    content.add("third floor:");
 
-        ArrayList<MapRoomNode> beyondPath = findMapPath(AbstractDungeon.map);
-        String layer3_path = node_path_to_string_path(beyondPath);
+                    ArrayList<MapRoomNode> beyondPath = findMapPath(AbstractDungeon.map);
+                    String layer3_path = node_path_to_string_path(beyondPath);
 
-        runPath(beyondPath);
-        getBossRewards();
+                    runPath(beyondPath);
+                    getBossRewards();
 
-        content.add(layer3_path);
-        content.add("              boss         ");
-        content.addAll(print_reward(layer3_path, beyond.map));
-
-
-        currentAct += 1;
-        AbstractDungeon end = new TheEnding(player, AbstractDungeon.specialOneTimeEventList);
-        AbstractDungeon.floorNum += 1;
-        ArrayList<MapRoomNode> endPath = new ArrayList<>();
-        endPath.add(AbstractDungeon.map.get(0).get(3));
-        endPath.add(AbstractDungeon.map.get(1).get(3));
-        endPath.add(AbstractDungeon.map.get(2).get(3));
-        runPath(endPath);
-        getBossRewards();
-
-        seedResult.updateRelics();
+                    content.add(layer3_path);
+                    content.add("              boss         " + layer_rewards.remove(layer_rewards.size() - 1));
+                    content.addAll(print_reward(layer3_path, beyond.map));
 
 
-        try {
-            FileWriter writer = new FileWriter(settings.seed + "-" + settings.ascensionLevel + "-" + settings.playerClass + "-" + layer1_path + "-" + layer2_path + "-" + layer3_path + ".txt");
-            for (String line : content) {
-                System.out.println(line);
-                writer.write(line + "\n");
-            }
-            writer.close();
-            System.out.println("Successfully wrote text to file.");
+                    currentAct += 1;
+                    AbstractDungeon end = new TheEnding(player, AbstractDungeon.specialOneTimeEventList);
+                    AbstractDungeon.floorNum += 1;
+                    ArrayList<MapRoomNode> endPath = new ArrayList<>();
+                    endPath.add(AbstractDungeon.map.get(0).get(3));
+                    endPath.add(AbstractDungeon.map.get(1).get(3));
+                    endPath.add(AbstractDungeon.map.get(2).get(3));
+                    runPath(endPath);
+                    getBossRewards();
 
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+                    seedResult.updateRelics();
+
+
+                    try {
+                        FileWriter writer = new FileWriter(settings.seed + "-" + settings.ascensionLevel + "-" + settings.playerClass + "-" + layer1_path + "-" + layer2_path + "-" + layer3_path + ".log");
+                        for (String line : content) {
+                            System.out.println(line);
+                            writer.write(line + "\n");
+                        }
+                        writer.close();
+                        System.out.println("Successfully wrote text to file.");
+
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                    layer1_path_num++;
+                } while (layer1_path_num <= layer1_all_path.size());
+                layer2_path_num++;
+            } while (layer2_path_num <= layer2_all_path.size());
+            layer3_path_num++;
+        } while (layer3_path_num <= layer3_all_path.size());
         return true;
     }
 
@@ -481,10 +492,7 @@ public class SeedRunner {
 
     private ArrayList<String> print_reward(String current_path, ArrayList<ArrayList<MapRoomNode>> map) {
         ArrayList<String> content = new ArrayList<>();
-        System.out.println(current_path);
         String[] current_step_list = current_path.split("");
-        System.out.println(current_step_list.length);
-        System.out.println(current_step_list);
         String map_string = MapGenerator.toString(map, Boolean.valueOf(true));
         String[] map_string_list = map_string.split("\n");
         for (int i = 0; i < 15; i++) {
@@ -1162,10 +1170,11 @@ public class SeedRunner {
                 return;
             }
         }
+        Reward bossReward = new Reward(AbstractDungeon.floorNum);
+        bossReward.monsterName = getEncounterName(AbstractDungeon.bossList.get(1));
         if (currentAct < 2) {
             AbstractDungeon.miscRng = new Random(currentSeed + (long) AbstractDungeon.floorNum);
 
-            Reward bossReward = new Reward(AbstractDungeon.floorNum);
             bossReward.addCards(AbstractDungeon.getRewardCards());
             int gold = 100 + AbstractDungeon.miscRng.random(-5, 5);
             if (AbstractDungeon.ascensionLevel >= 13) {
@@ -1202,10 +1211,11 @@ public class SeedRunner {
                 }
             }
             bossReward.addRelics(bossRelicReward.relics);
-            layer_rewards.add(bossReward);
+
             seedResult.addCardReward(bossReward);
             seedResult.addMiscReward(bossRelicReward);
         }
+        layer_rewards.add(bossReward);
     }
 
     private AbstractPotion getPotionReward() {
