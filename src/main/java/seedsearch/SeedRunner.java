@@ -159,7 +159,7 @@ public class SeedRunner {
         if (settings.layer1_path == null) {
             layer1_all_path = getAllPath(exordium.map);
         } else {
-            layer1_all_path = new ArrayList<>(Arrays.asList(settings.layer1_path.split(" ")));
+            layer1_all_path = new ArrayList<>(Arrays.asList(settings.layer1_path.split("")));
         }
         if (layer1_path_num == layer1_all_path.size()) {
             return true;
@@ -220,7 +220,7 @@ public class SeedRunner {
 
 
         try {
-            FileWriter writer = new FileWriter(settings.seed + "-" + settings.ascensionLevel + "-" + settings.playerClass + "-" + layer1_path.replaceAll(",", "") + "-" + layer2_path.replaceAll(",", "") + "-" + layer3_path.replaceAll(",", "") + ".txt");
+            FileWriter writer = new FileWriter(settings.seed + "-" + settings.ascensionLevel + "-" + settings.playerClass + "-" + layer1_path + "-" + layer2_path + "-" + layer3_path + ".txt");
             for (String line : content) {
                 System.out.println(line);
                 writer.write(line + "\n");
@@ -472,17 +472,19 @@ public class SeedRunner {
     }
 
     private String node_path_to_string_path(ArrayList<MapRoomNode> nodePath) {
-        String current_path = "";
+        StringBuilder current_path = new StringBuilder();
         for (MapRoomNode path : nodePath) {
-            current_path = current_path + "," + path.x;
+            current_path.append(path.x);
         }
-        current_path = current_path.substring(1);
-        return current_path;
+        return current_path.toString();
     }
 
     private ArrayList<String> print_reward(String current_path, ArrayList<ArrayList<MapRoomNode>> map) {
         ArrayList<String> content = new ArrayList<>();
-        String[] current_step_list = current_path.split(",");
+        System.out.println(current_path);
+        String[] current_step_list = current_path.split("");
+        System.out.println(current_step_list.length);
+        System.out.println(current_step_list);
         String map_string = MapGenerator.toString(map, Boolean.valueOf(true));
         String[] map_string_list = map_string.split("\n");
         for (int i = 0; i < 15; i++) {
@@ -497,7 +499,7 @@ public class SeedRunner {
     }
 
     private ArrayList<MapRoomNode> string_path_list_to_node_list(String string_path, ArrayList<ArrayList<MapRoomNode>> map) {
-        String[] one_path_list = string_path.split(",");
+        String[] one_path_list = string_path.split("");
 //        ArrayList<MapRoomNode> exordiumPath = findMapPath(AbstractDungeon.map);
         ArrayList<MapRoomNode> dungeonPath = new ArrayList<MapRoomNode>(15);
         for (int i = 0; i < one_path_list.length; i++) {
@@ -521,12 +523,12 @@ public class SeedRunner {
             newPaths = new ArrayList<>();
             for (int j = 0; j < oldPaths.size(); j++) {
                 String oldPath = oldPaths.get(j);
-                String[] path_node_list = oldPath.split(",");
+                String[] path_node_list = oldPath.split("");
                 String last_node_x = path_node_list[path_node_list.length - 1];
                 MapRoomNode last_node = map.get(i).get(Integer.valueOf(last_node_x));
                 ArrayList<MapEdge> edges = last_node.getEdges();
                 for (MapEdge edge : edges) {
-                    newPaths.add(oldPath + "," + edge.dstX);
+                    newPaths.add(oldPath + "" + edge.dstX);
                 }
             }
             oldPaths = newPaths;
