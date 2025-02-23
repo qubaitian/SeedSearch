@@ -57,6 +57,7 @@ public class SeedRunner {
     public static ArrayList<Reward> combatCardRewards = new ArrayList<>();
     public static ArrayList<AbstractPotion> combatPotions = new ArrayList<>();
     public static int combatGold = 0;
+    private final SearchSettings settings;
     public SeedResult seedResult;
     public ArrayList<Reward> layer_rewards = new ArrayList<>();
     public ArrayList<String> layer1_all_path = new ArrayList<>();
@@ -69,7 +70,6 @@ public class SeedRunner {
     private int currentAct;
     private int actFloor;
     private int bootsCharges = 0;
-    private SearchSettings settings;
     private long currentSeed;
 
     public SeedRunner(SearchSettings settings) {
@@ -127,7 +127,37 @@ public class SeedRunner {
         CardCrawlGame.music.update();
     }
 
+    private void printNeowOption(long seed) {
+        for (int i = 0; i <= 3; i++) {
+            setSeed(seed);
+            if (!settings.speedrunPace) {
+                CardCrawlGame.playtime = 900F;
+            } else {
+                CardCrawlGame.playtime = 0F;
+            }
+
+            if (settings.showRawRelicPools) {
+                seedResult.SetCommonRelicPool(AbstractDungeon.commonRelicPool);
+                seedResult.SetUncommonRelicPool(AbstractDungeon.uncommonRelicPool);
+                seedResult.SetRareRelicPool(AbstractDungeon.rareRelicPool);
+                seedResult.SetBossRelicPool(AbstractDungeon.bossRelicPool);
+                seedResult.SetShopRelicPool(AbstractDungeon.shopRelicPool);
+            }
+
+            AbstractDungeon exordium = new Exordium(player, new ArrayList<>());
+            ArrayList<NeowReward> neowRewards = getNeowRewards();
+            seedResult.addNeowRewards(neowRewards);
+            if (settings.neowChoice < 0 || settings.neowChoice > 3) {
+                throw new RuntimeException("The 'neowChoice' setting must be between 0 and 3.");
+            }
+            NeowReward neowReward;
+            neowReward = neowRewards.get(i);
+            claimNeowReward(neowReward);
+        }
+    }
+
     public boolean runSeed(long seed) {
+        printNeowOption(seed);
         do {
             layer2_path_num = 0;
             do {
@@ -155,36 +185,18 @@ public class SeedRunner {
                         throw new RuntimeException("The 'neowChoice' setting must be between 0 and 3.");
                     }
                     NeowReward neowReward;
-                    if (settings.forceNeowLament) {
-                        neowReward = new NeowReward(true);
-                    } else {
-                        neowReward = neowRewards.get(settings.neowChoice);
-                    }
+                    neowReward = neowRewards.get(settings.neowChoice);
                     claimNeowReward(neowReward);
                     if (layer1_all_path.isEmpty()) {
-                        layer1_all_path = getAllPath(exordium.map);
-                        if (settings.layer1_path != null) {
-                            ArrayList<String> player_set_all_path = new ArrayList<>(Arrays.asList(settings.layer1_path.split(" ")));
-                            ArrayList<String> without_star_all_path = new ArrayList<>();
-
-                            for (String s : player_set_all_path) {
-                                label:
-                                for (String s2 : layer1_all_path) {
-                                    for (int i = 0; i < s.length(); i++) {
-                                        if (s2.charAt(i) == '*') {
-                                            continue;
-                                        }
-                                        if (s.charAt(i) == s2.charAt(i)) {
-                                            continue;
-                                        }
-                                        if (s.charAt(i) != s2.charAt(i)) {
-                                            continue label;
-                                        }
-                                    }
-                                    without_star_all_path.add(s);
-                                }
+                        if (settings.layer1_path == null) {
+                            if (settings.neowChoice < 0 || settings.neowChoice > 3) {
+                                layer1_all_path = new ArrayList<>();
+                                layer1_all_path.add(getAllPath(exordium.map).get(0));
+                            } else {
+                                layer1_all_path = getAllPath(exordium.map);
                             }
-                            layer1_all_path = without_star_all_path;
+                        } else {
+                            layer1_all_path = new ArrayList<>(Arrays.asList(settings.layer1_path.split(" ")));
                         }
                     }
                     String layer1_path = layer1_all_path.get(layer1_path_num);
@@ -204,8 +216,21 @@ public class SeedRunner {
                     AbstractDungeon city = new TheCity(player, AbstractDungeon.specialOneTimeEventList);
                     content.add("second floor:");
 
-                    ArrayList<MapRoomNode> cityPath = findMapPath(AbstractDungeon.map);
-                    String layer2_path = node_path_to_string_path(cityPath);
+                    if (layer2_all_path.isEmpty()) {
+                        if (settings.layer2_path == null) {
+                            if (settings.layer1_path == null) {
+                                layer2_all_path = new ArrayList<>();
+                                layer2_all_path.add(getAllPath(city.map).get(0));
+                            } else {
+                                layer2_all_path = getAllPath(city.map);
+                            }
+                        } else {
+                            layer2_all_path = new ArrayList<>(Arrays.asList(settings.layer2_path.split(" ")));
+                        }
+                    }
+                    String layer2_path = layer2_all_path.get(layer2_path_num);
+                    ArrayList<MapRoomNode> cityPath = string_path_list_to_node_list(layer2_path, city.map);
+
                     runPath(cityPath);
                     getBossRewards();
 
@@ -217,6 +242,18 @@ public class SeedRunner {
                     AbstractDungeon beyond = new TheBeyond(player, AbstractDungeon.specialOneTimeEventList);
 
                     content.add("third floor:");
+                    if (layer3_all_path.isEmpty()) {
+                        if (settings.layer3_path == null) {
+                            if (settings.layer2_path == null) {
+                                layer3_all_path = new ArrayList<>();
+                                layer3_all_path.add(getAllPath(beyond.map).get(0));
+                            } else {
+                                layer3_all_path = getAllPath(beyond.map);
+                            }
+                        } else {
+                            layer3_all_path = new ArrayList<>(Arrays.asList(settings.layer3_path.split(" ")));
+                        }
+                    }
 
                     ArrayList<MapRoomNode> beyondPath = findMapPath(AbstractDungeon.map);
                     String layer3_path = node_path_to_string_path(beyondPath);
@@ -255,11 +292,11 @@ public class SeedRunner {
                         throw new RuntimeException(e);
                     }
                     layer1_path_num++;
-                } while (layer1_path_num <= layer1_all_path.size());
+                } while (layer1_path_num < layer1_all_path.size());
                 layer2_path_num++;
-            } while (layer2_path_num <= layer2_all_path.size());
+            } while (layer2_path_num < layer2_all_path.size());
             layer3_path_num++;
-        } while (layer3_path_num <= layer3_all_path.size());
+        } while (layer3_path_num < layer3_all_path.size());
         return true;
     }
 
@@ -314,6 +351,7 @@ public class SeedRunner {
         if (neowOption.drawback == NeowReward.NeowRewardDrawback.CURSE) {
             addInvoluntaryCardReward(AbstractDungeon.getCardWithoutRng(AbstractCard.CardRarity.CURSE), reward);
         }
+        System.out.println("neowReward: " + reward);
         seedResult.addMiscReward(reward);
     }
 
@@ -358,10 +396,7 @@ public class SeedRunner {
                 int count = 0;
                 ArrayList<AbstractCard> strikesAndDefends = new ArrayList<>();
                 for (AbstractCard card : player.masterDeck.group) {
-                    if ((card.cardID.equals("Strike_R")) || (card.cardID.equals("Strike_G")) ||
-                            (card.cardID.equals("Strike_B")) || (card.cardID.equals("Strike_P")) ||
-                            (card.cardID.equals("Defend_R")) || (card.cardID.equals("Defend_G")) ||
-                            (card.cardID.equals("Defend_B")) || (card.cardID.equals("Defend_P"))) {
+                    if ((card.cardID.equals("Strike_R")) || (card.cardID.equals("Strike_G")) || (card.cardID.equals("Strike_B")) || (card.cardID.equals("Strike_P")) || (card.cardID.equals("Defend_R")) || (card.cardID.equals("Defend_G")) || (card.cardID.equals("Defend_B")) || (card.cardID.equals("Defend_P"))) {
                         count += 1;
                         strikesAndDefends.add(card);
                     }
@@ -554,7 +589,7 @@ public class SeedRunner {
                 MapRoomNode last_node = map.get(i).get(Integer.valueOf(last_node_x));
                 ArrayList<MapEdge> edges = last_node.getEdges();
                 for (MapEdge edge : edges) {
-                    newPaths.add(oldPath + "" + edge.dstX);
+                    newPaths.add(oldPath + edge.dstX);
                 }
             }
             oldPaths = newPaths;
@@ -704,7 +739,8 @@ public class SeedRunner {
                     if (!eventReward.isEmpty()) {
                         seedResult.addMiscReward(eventReward);
                     }
-                    layer_rewards.add(new Reward(AbstractDungeon.floorNum, event_name));
+                    eventReward.eventName = event_name;
+                    layer_rewards.add(eventReward);
                     break;
                 case MONSTER:
                     seedResult.addToTrueMapPath("M");

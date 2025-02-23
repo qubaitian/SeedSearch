@@ -98,6 +98,6 @@ public class Reward {
         if (eventName != null) {
             event_string = " event: " + eventName;
         }
-        return monster_string + card_string + relic_string + potion_string + event_string;
+        return event_string + monster_string + card_string + relic_string + potion_string;
     }
 }
