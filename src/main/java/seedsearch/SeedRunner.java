@@ -254,9 +254,8 @@ public class SeedRunner {
                             layer3_all_path = new ArrayList<>(Arrays.asList(settings.layer3_path.split(" ")));
                         }
                     }
-
-                    ArrayList<MapRoomNode> beyondPath = findMapPath(AbstractDungeon.map);
-                    String layer3_path = node_path_to_string_path(beyondPath);
+                    String layer3_path = layer3_all_path.get(layer3_path_num);
+                    ArrayList<MapRoomNode> beyondPath = string_path_list_to_node_list(layer3_path, beyond.map);
 
                     runPath(beyondPath);
                     getBossRewards();
